@@ -21,6 +21,12 @@
             <artifactId>lucene-analyzers-common</artifactId>
             <version>8.1.1</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.lucene/lucene-analyzers-morfologik -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analyzers-morfologik</artifactId>
+            <version>8.1.1</version>
+        </dependency>
     </dependencies>
 
     <build>
