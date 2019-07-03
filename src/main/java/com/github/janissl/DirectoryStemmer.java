@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.ru.RussianAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.sv.SwedishAnalyzer;
 import org.apache.lucene.analysis.th.ThaiAnalyzer;
+import org.apache.lucene.analysis.uk.UkrainianMorfologikAnalyzer;
 import org.apache.lucene.analysis.morfologik.MorfologikAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tr.TurkishAnalyzer;
@@ -165,6 +166,9 @@ public class DirectoryStemmer {
                 break;
             case "tr":
                 analyzer = new TurkishAnalyzer();
+                break;
+            case "uk":
+                analyzer = new UkrainianMorfologikAnalyzer();
                 break;
             default:
                 analyzer = new StandardAnalyzer();
