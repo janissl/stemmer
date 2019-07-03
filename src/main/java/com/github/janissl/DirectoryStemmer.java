@@ -187,6 +187,8 @@ public class DirectoryStemmer {
             stemmedWord = stemWord(word, lang);
             if (stemmedWord != null) {
                 stemmedWords.add(stemmedWord);
+            } else {
+                stemmedWords.add(word);
             }
         }
 
