@@ -42,6 +42,7 @@ import org.apache.lucene.analysis.tr.TurkishAnalyzer;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,10 +58,8 @@ public class DirectoryStemmer {
         targetDirectory = trgDir;
     }
 
-    private String stemWord(String term, String lang) throws IOException {
-        String stem = null;
+    private Analyzer getAnalyzer(String lang) {
         Analyzer analyzer;
-        TokenStream stream;
 
         switch (lang) {
             case "ar":
@@ -174,26 +173,54 @@ public class DirectoryStemmer {
                 analyzer = new StandardAnalyzer();
         }
 
+        return analyzer;
+    }
+
+    private String getStem(Analyzer analyzer, String term) throws IOException {
+        List<String> partStems = new ArrayList<>();
+        TokenStream stream;
+
         stream = analyzer.tokenStream(null, term);
         stream.reset();
+
         while (stream.incrementToken()) {
-            stem = stream.getAttribute(CharTermAttribute.class).toString();
+            partStems.add(stream.getAttribute(CharTermAttribute.class).toString());
         }
 
         stream.end();
         stream.close();
 
-        return stem;
+        if (partStems.isEmpty()) {
+            partStems.add(term);
+        }
+
+        return String.join("/", partStems);
+    }
+
+    private String stemWord(Analyzer analyzer, String term) throws IOException {
+        List<String> stemmedParts = new ArrayList<>();
+
+        for (String part : term.split("-")) {
+            stemmedParts.add(getStem(analyzer, part));
+        }
+
+        return String.join("-", stemmedParts).toLowerCase();
     }
 
     private String stemSentence(String sentence, String lang) throws IOException {
-        String[] words = sentence.split("[\\p{Punct}\\s]+");
+        if (sentence == null || lang == null) {
+            return "";
+        }
+
+        Analyzer analyzer = getAnalyzer(lang);
+
+        String[] words = sentence.split("[\\p{Zs}\\p{P}&&[^-]]+");
         List<String> stemmedWords = new ArrayList<>();
         String stemmedWord;
 
         for (String word : words) {
-            stemmedWord = stemWord(word, lang);
-            if (stemmedWord != null) {
+            stemmedWord = stemWord(analyzer, word);
+            if (!stemmedWord.isEmpty()) {
                 stemmedWords.add(stemmedWord);
             } else {
                 stemmedWords.add(word);
@@ -204,7 +231,7 @@ public class DirectoryStemmer {
     }
 
     private List<String> stemFile(File inputFile) throws IOException {
-        Charset charset = Charset.forName("UTF-8");
+        Charset charset = StandardCharsets.UTF_8;
         List<String> stemmedLines = new ArrayList<>();
         String lang = getFileLanguage(inputFile.getName());
 
@@ -238,11 +265,11 @@ public class DirectoryStemmer {
 
     private void writeStemmedFile(File outputFile, List<String> lines) throws IOException {
         Path fileLocation = Paths.get(outputFile.getParent());
-        if (Files.notExists(fileLocation)) {
+        if (!fileLocation.toFile().exists()) {
             Files.createDirectory(fileLocation);
         }
 
-        Charset charset = Charset.forName("UTF-8");
+        Charset charset = StandardCharsets.UTF_8;
 
         try (BufferedWriter writer = Files.newBufferedWriter(outputFile.toPath(), charset)) {
             for (String line : lines) {
@@ -257,11 +284,11 @@ public class DirectoryStemmer {
     }
 
     public static void main(String[] args) {
-        File sourceDirectory = new File(args[0]);
-        File destinationDirectory = new File(args[1]);
+        Path sourceLocation = Paths.get(args[0]);
+        Path destination = Paths.get(args[1]);
 
-        if ((Files.exists(sourceDirectory.toPath()) && Files.exists(destinationDirectory.toPath()))) {
-            DirectoryStemmer ds = new DirectoryStemmer(sourceDirectory, destinationDirectory);
+        if (sourceLocation.toFile().exists() && destination.toFile().exists()) {
+            DirectoryStemmer ds = new DirectoryStemmer(sourceLocation.toFile(), destination.toFile());
             ds.stemDirectory();
         } else {
             System.err.println("The source directory and the destination directory must exist!");
